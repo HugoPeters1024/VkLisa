@@ -1,11 +1,24 @@
 #include <precomp.h>
 
 struct Ctx {
-    GLFWwindow* window;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
+    VkDevice device;
+    VmaAllocator allocator;
+    struct {
+        GLFWwindow* glfwWindow;
+        VkSurfaceKHR surface;
+        VkSwapchainKHR swapchain;
+        std::vector<VkImage> swapchainImages;
+        std::vector<VkImageView> swapchainViews;
+    } window;
+    struct {
+        VkQueue compute;
+        VkQueue graphics;
+        VkQueue present;
+    } queues;
 };
 
-Ctx createCtx();
-void destroyCtx(Ctx&);
+Ctx ctxCreate();
+void ctxDestroy(Ctx&);
 

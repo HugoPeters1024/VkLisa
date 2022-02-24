@@ -1,6 +1,9 @@
 #pragma once
 #include <stdio.h>
 #include <array>
+#include <optional>
+#include <set>
+
 
 #include <spdlog/spdlog.h>
 namespace spdlog {
@@ -21,5 +24,7 @@ namespace logger = spdlog;
 #include <vks/VulkanInitializers.hpp>
 #include <vks/VulkanTools.h>
 #define vkCheck(f) VK_CHECK_RESULT(f)
+#include <vks/vk_mem_alloc.hpp>
+
 
 
