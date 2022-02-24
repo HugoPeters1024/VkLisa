@@ -386,5 +386,29 @@ namespace vks
 	        return (value + alignment - 1) & ~(alignment - 1);
         }
 
+        bool validationLayersSupported(const std::vector<const char*> requested) {
+            uint32_t layerCount;
+            vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+            VkLayerProperties available[layerCount];
+            vkEnumerateInstanceLayerProperties(&layerCount, available);
+
+            for(auto requested : requested) {
+                bool found = false;
+
+                for (auto available : available) {
+                    if (strcmp(requested, available.layerName) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
 	}
 }

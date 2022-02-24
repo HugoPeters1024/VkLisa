@@ -1,6 +1,15 @@
 #include <precomp.h>
+#include <Ctx.h>
 
 int main(int argc, char** argv) {
-    printf("Hello CPP\n");
+    logger::set_level(spdlog::level::trace);
+
+    auto ctx = createCtx();
+
+    while (!glfwWindowShouldClose(ctx.window)) {
+        glfwPollEvents();
+    }
+
+    destroyCtx(ctx);
     return 0;
 }
