@@ -414,7 +414,7 @@ namespace vks
 		}
 
 		inline VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-			uint32_t setLayoutCount = 1)
+			uint32_t setLayoutCount = 0)
 		{
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -628,14 +628,16 @@ namespace vks
 		}
 
 		inline VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
-			uint32_t viewportCount,
-			uint32_t scissorCount,
+			VkViewport* viewport,
+			VkRect2D* scissor,
 			VkPipelineViewportStateCreateFlags flags = 0)
 		{
 			VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo {};
 			pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-			pipelineViewportStateCreateInfo.viewportCount = viewportCount;
-			pipelineViewportStateCreateInfo.scissorCount = scissorCount;
+			pipelineViewportStateCreateInfo.viewportCount = 1;
+            pipelineViewportStateCreateInfo.pViewports = viewport;
+			pipelineViewportStateCreateInfo.scissorCount = 1;
+			pipelineViewportStateCreateInfo.pScissors = scissor;
 			pipelineViewportStateCreateInfo.flags = flags;
 			return pipelineViewportStateCreateInfo;
 		}

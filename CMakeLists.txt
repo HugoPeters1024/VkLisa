@@ -4,8 +4,22 @@ project(cvulkan)
 set(CMAKE_CXX_STANDARD 20)
 file(GLOB_RECURSE src CONFIGURE_DEPENDS "include/*.h" "include/*.hpp" "src/*.cpp")
 
+macro(shader)
+    add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/shaders_bin/${ARGV0}.spv
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${ARGV0}
+            COMMAND /usr/bin/glslc
+            ARGS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${ARGV0} -o ${CMAKE_CURRENT_SOURCE_DIR}/shaders_bin/${ARGV0}.spv -O --target-env=vulkan1.2
+            COMMENT building shaders
+            VERBATIM)
+    SET(shader_src ${shader_src} ${CMAKE_CURRENT_SOURCE_DIR}/shaders_bin/${ARGV0}.spv)
+endmacro()
 
-add_executable(cvulkan ${src})
+shader("quad.vert")
+shader("quad.frag")
+
+
+add_executable(cvulkan ${src} ${shader_src})
 target_precompile_headers(cvulkan PRIVATE include/precomp.h)
 target_include_directories(cvulkan PRIVATE include)
 

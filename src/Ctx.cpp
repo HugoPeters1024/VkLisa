@@ -65,9 +65,17 @@ void ctxDestroy(Ctx& ctx) {
     glfwTerminate();
 }
 
+bool ctxWindowShouldClose(Ctx& ctx) {
+    return glfwWindowShouldClose(ctx.window.glfwWindow);
+}
+
+void ctxUpdate(Ctx&) {
+    glfwPollEvents();
+}
+
 // Private implementation
 void _initInstance(Ctx& ctx) {
-    auto appInfo = vks::initializers::applicationInfo(VK_MAKE_VERSION(1,0,0));
+    auto appInfo = vks::initializers::applicationInfo(VK_MAKE_VERSION(1,2,0));
 
     std::vector<const char*> validationLayers{};
     if (enableValidation) {
@@ -180,6 +188,9 @@ void _initSwapchain(Ctx& ctx) {
     auto format = _chooseSurfaceFormat(support.formats);
     auto mode = _choosePresentMode(support.presentModes);
     auto extent = _chooseSwapchainExtent(ctx.window.glfwWindow, support.capabilities);
+    ctx.window.format = format.format;
+    ctx.window.width = extent.width;
+    ctx.window.height = extent.height;
 
     uint32_t imageCount = support.capabilities.minImageCount + 1;
     if (support.capabilities.maxImageCount > 0) {

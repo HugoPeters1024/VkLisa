@@ -1,3 +1,4 @@
+#pragma once
 #include <precomp.h>
 
 struct Ctx {
@@ -8,9 +9,12 @@ struct Ctx {
     struct {
         GLFWwindow* glfwWindow;
         VkSurfaceKHR surface;
+        VkFormat format;
         VkSwapchainKHR swapchain;
         std::vector<VkImage> swapchainImages;
         std::vector<VkImageView> swapchainViews;
+        uint32_t width;
+        uint32_t height;
     } window;
     struct {
         VkQueue compute;
@@ -21,4 +25,7 @@ struct Ctx {
 
 Ctx ctxCreate();
 void ctxDestroy(Ctx&);
+bool ctxWindowShouldClose(Ctx&);
+void ctxUpdate(Ctx&);
+
 
