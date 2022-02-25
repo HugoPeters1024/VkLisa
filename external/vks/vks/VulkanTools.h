@@ -81,7 +81,7 @@ namespace vks
 		// Returns if a given format support LINEAR filtering
 		VkBool32 formatIsFilterable(VkPhysicalDevice physicalDevice, VkFormat format, VkImageTiling tiling);
 
-        const VkColorComponentFlags VK_COLOR_COMPONENT_FLAG_ALL = VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        const VkColorComponentFlags VK_COLOR_COMPONENT_FLAG_ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 		// Put an image memory barrier for setting an image layout on the sub resource into the given command buffer
 		void setImageLayout(

@@ -12,5 +12,4 @@ void main() {
     uv = positions[gl_VertexIndex];
     gl_Position = vec4(uv, 0.0f, 1.0f);
     uv = (uv + 1.0f) * 0.5f;
-    uv *= vec2(1.0f, -1.0f);
 }

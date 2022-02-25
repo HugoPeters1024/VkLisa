@@ -26,6 +26,8 @@ void _initPhysicalDevice(Ctx&);
 void _initDevice(Ctx&);
 void _initAllocator(Ctx&);
 void _initSwapchain(Ctx&);
+void _initSyncObjects(Ctx&);
+void _initCommandPool(Ctx&);
 
 
 QueueFamilies _queryQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
@@ -41,7 +43,7 @@ void glfwErrorCallback(int error, const char* description) {
 
 // Public
 Ctx ctxCreate() {
-    Ctx ctx{};
+    Ctx ctx{ .state = CTX_STATE_APP_START, };
     _initWindow(ctx);
     _initInstance(ctx);
     _initSurface(ctx);
@@ -49,11 +51,19 @@ Ctx ctxCreate() {
     _initDevice(ctx);
     _initAllocator(ctx);
     _initSwapchain(ctx);
+    _initSyncObjects(ctx);
+    _initCommandPool(ctx);
     return ctx;
 }
 
 void ctxDestroy(Ctx& ctx) {
-    logger::debug("destroying ctx");
+    logger::debug("shutting down, flushing commands...");
+    vkCheck(vkDeviceWaitIdle(ctx.device));
+    logger::debug("cleaning up");
+    vkDestroyCommandPool(ctx.device, ctx.commandPool, nullptr);
+
+    vkDestroySemaphore(ctx.device, ctx.renderFinished, nullptr);
+    vkDestroySemaphore(ctx.device, ctx.imageAvailable, nullptr);
     for (auto view : ctx.window.swapchainViews) {
         vkDestroyImageView(ctx.device, view, nullptr);
     }
@@ -69,8 +79,55 @@ bool ctxWindowShouldClose(Ctx& ctx) {
     return glfwWindowShouldClose(ctx.window.glfwWindow);
 }
 
-void ctxUpdate(Ctx&) {
+FrameCtx& ctxBeginFrame(Ctx& ctx) {
+    vkCheck(vkDeviceWaitIdle(ctx.device));
+    assert(ctx.state == CTX_STATE_APP_START || ctx.state == CTX_STATE_FRAME_SUBMITTED);
+    ctx.state = CTX_STATE_FRAME_STARTED;
     glfwPollEvents();
+
+    ctx.frameCtx = {
+        .swapchainImage = ctx.window.swapchainImages[0],
+        .swapchainView = ctx.window.swapchainViews[0],
+    };
+
+    vkAcquireNextImageKHR(ctx.device, ctx.window.swapchain, UINT64_MAX, ctx.imageAvailable, VK_NULL_HANDLE, &ctx.frameCtx.imageIdx);
+    return ctx.frameCtx;
+}
+
+void ctxEndFrame(Ctx& ctx, VkCommandBuffer cmdBuffer) {
+    assert(ctx.state == CTX_STATE_FRAME_STARTED);
+    ctx.state = CTX_STATE_FRAME_SUBMITTED;
+
+    auto submitInfo = vks::initializers::submitInfo(&cmdBuffer);
+    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &ctx.imageAvailable;
+    submitInfo.pWaitDstStageMask = &waitStage;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &ctx.renderFinished;
+    vkCheck(vkQueueSubmit(ctx.queues.graphics, 1, &submitInfo, VK_NULL_HANDLE));
+
+    VkPresentInfoKHR presentInfo {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &ctx.renderFinished,
+        .swapchainCount = 1,
+        .pSwapchains = &ctx.window.swapchain,
+        .pImageIndices = &ctx.frameCtx.imageIdx,
+    };
+
+    vkCheck(vkQueuePresentKHR(ctx.queues.present, &presentInfo));
+}
+
+VkCommandBuffer ctxAllocCmdBuffer(Ctx& ctx) {
+    VkCommandBuffer cmdBuffer;
+    auto allocInfo = vks::initializers::commandBufferAllocateInfo(ctx.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+    vkCheck(vkAllocateCommandBuffers(ctx.device, &allocInfo, &cmdBuffer));
+    return cmdBuffer;
+}
+
+void ctxFinish(Ctx& ctx) {
+    vkCheck(vkDeviceWaitIdle(ctx.device));
 }
 
 // Private implementation
@@ -229,6 +286,19 @@ void _initSwapchain(Ctx& ctx) {
     }
 
     logger::trace("created swapchain");
+}
+
+void _initSyncObjects(Ctx& ctx) {
+    auto semInfo = vks::initializers::semaphoreCreateInfo();
+    vkCheck(vkCreateSemaphore(ctx.device, &semInfo, nullptr, &ctx.renderFinished));
+    vkCheck(vkCreateSemaphore(ctx.device, &semInfo, nullptr, &ctx.imageAvailable));
+}
+
+void _initCommandPool(Ctx& ctx) {
+    auto createInfo = vks::initializers::commandPoolCreateInfo(ctx.queues.graphicsFamily);
+    createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+    vkCheck(vkCreateCommandPool(ctx.device, &createInfo, nullptr, &ctx.commandPool));
 }
 
 QueueFamilies _queryQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {

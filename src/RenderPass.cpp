@@ -12,19 +12,49 @@ RenderPass renderPassCreate(const Ctx& ctx, const RenderPassInfo&) {
         .pColorAttachments = &attachmentReference,
     };
 
+    VkSubpassDependency dependency {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+    };
+
     VkRenderPassCreateInfo renderPassInfo {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = 1,
         .pAttachments = &colorAttachment,
         .subpassCount = 1,
         .pSubpasses = &subpass,
+        .dependencyCount = 1,
+        .pDependencies = &dependency,
     };
 
     RenderPass pass{};
     vkCheck(vkCreateRenderPass(ctx.device, &renderPassInfo, nullptr, &pass.renderPass));
+
+    pass.framebuffers.resize(ctx.window.swapchainImages.size());
+    for(uint32_t i=0; i<pass.framebuffers.size(); i++) {
+        VkImageView attachments[1] { ctx.window.swapchainViews[i] };
+
+        auto framebufferInfo = vks::initializers::framebufferCreateInfo();
+        framebufferInfo.renderPass = pass.renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = ctx.window.width;
+        framebufferInfo.height = ctx.window.height;
+        framebufferInfo.layers = 1;
+
+        vkCheck(vkCreateFramebuffer(ctx.device, &framebufferInfo, nullptr, &pass.framebuffers[i]));
+    }
+
     return pass;
 }
 
 void renderPassDestroy(const Ctx& ctx, RenderPass& renderPass) {
+    for (auto framebuffer : renderPass.framebuffers) {
+        vkDestroyFramebuffer(ctx.device, framebuffer, nullptr);
+    }
     vkDestroyRenderPass(ctx.device, renderPass.renderPass, nullptr);
 }

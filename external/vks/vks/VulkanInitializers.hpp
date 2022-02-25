@@ -125,10 +125,12 @@ namespace vks
 			return cmdBufferInheritanceInfo;
 		}
 
-		inline VkRenderPassBeginInfo renderPassBeginInfo()
+		inline VkRenderPassBeginInfo renderPassBeginInfo(VkRenderPass renderPass, VkFramebuffer framebuffer)
 		{
 			VkRenderPassBeginInfo renderPassBeginInfo {};
 			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassBeginInfo.renderPass = renderPass;
+            renderPassBeginInfo.framebuffer = framebuffer;
 			return renderPassBeginInfo;
 		}
 

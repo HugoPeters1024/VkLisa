@@ -7,6 +7,7 @@ struct RenderPassInfo {
 
 struct RenderPass {
     VkRenderPass renderPass;
+    std::vector<VkFramebuffer> framebuffers;
 };
 
 RenderPass renderPassCreate(const Ctx& ctx, const RenderPassInfo&);
