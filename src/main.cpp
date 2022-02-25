@@ -20,7 +20,11 @@ int main(int argc, char** argv) {
     auto pipeline = rastPipelineCreate(ctx, rastInfo);
 
     auto cmdBuffer = ctxAllocCmdBuffer(ctx);
+    double ping;
+    uint32_t frameCounter = 0;
     while (!ctxWindowShouldClose(ctx)) {
+        ping = glfwGetTime();
+
         auto frameCtx = ctxBeginFrame(ctx);
         vkCheck(vkResetCommandBuffer(cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
 
@@ -40,6 +44,13 @@ int main(int argc, char** argv) {
         vkCheck(vkEndCommandBuffer(cmdBuffer));
 
         ctxEndFrame(ctx, cmdBuffer);
+
+        if (frameCounter % 100 == 0) {
+            double fps = 1.0f / (glfwGetTime() - ping);
+            logger::info("FPS: {}", fps);
+        }
+        
+        frameCounter++;
     }
 
     ctxFinish(ctx);
