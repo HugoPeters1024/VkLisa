@@ -1,7 +1,12 @@
 #pragma once
 #include <precomp.h>
 
-enum CtxState { CTX_STATE_APP_START, CTX_STATE_FRAME_STARTED, CTX_STATE_FRAME_SUBMITTED };
+enum CtxState { 
+    CTX_STATE_APP_START,
+    CTX_STATE_FRAME_STARTED,
+    CTX_STATE_FRAME_SUBMITTED,
+    CTX_STATE_FINISHED,
+};
 
 struct FrameCtx {
     uint32_t imageIdx;
@@ -37,6 +42,7 @@ struct Ctx {
 
     VkSemaphore imageAvailable;
     VkSemaphore renderFinished;
+    VkFence inFlightFence;
     FrameCtx frameCtx;
 };
 
@@ -47,6 +53,7 @@ bool ctxWindowShouldClose(Ctx&);
 FrameCtx& ctxBeginFrame(Ctx&);
 void ctxEndFrame(Ctx&, VkCommandBuffer);
 VkCommandBuffer ctxAllocCmdBuffer(Ctx&);
+void ctxSingleTimeCommand(Ctx& ctx, std::function<void(VkCommandBuffer)>);
 void ctxFinish(Ctx&);
 
 

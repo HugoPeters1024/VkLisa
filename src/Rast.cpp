@@ -28,6 +28,13 @@ RastPipeline rastPipelineCreate(const Ctx& ctx, const RastPipelineInfo& info) {
     // What kind of vertex data
     auto vertexInputInfo = vks::initializers::pipelineVertexInputStateCreateInfo({},{});
 
+    if (info.vertexDescription) {
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.pVertexBindingDescriptions = &info.vertexDescription->bindingDescription;
+        vertexInputInfo.vertexAttributeDescriptionCount = info.vertexDescription->attributeDescriptions.size();
+        vertexInputInfo.pVertexAttributeDescriptions = info.vertexDescription->attributeDescriptions.data();
+    }
+
     // Kind of geometry
     auto inputAssembly = vks::initializers::pipelineInputAssemblyStateCreateInfo(
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
@@ -45,7 +52,7 @@ RastPipeline rastPipelineCreate(const Ctx& ctx, const RastPipelineInfo& info) {
 
     // all colors no blending for output attachment
     auto colorBlendAttachment = vks::initializers::pipelineColorBlendAttachmentState(
-            vks::tools::VK_COLOR_COMPONENT_FLAG_ALL, VK_FALSE);
+            vks::tools::VK_COLOR_COMPONENT_FLAG_ALL, VK_TRUE);
 
     // only 1 attachment
     auto colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(1, &colorBlendAttachment);

@@ -2,6 +2,7 @@
 #include <Ctx.h>
 #include <RenderPass.h>
 #include <Rast.h>
+#include <BufferTools.h>
 
 int main(int argc, char** argv) {
     logger::set_level(spdlog::level::trace);
@@ -11,13 +12,21 @@ int main(int argc, char** argv) {
     RenderPassInfo renderPassInfo{};
     auto renderPass = renderPassCreate(ctx, renderPassInfo);
 
+    auto vertexDescription = Vertex2D4C::getVertexDescription();
     RastPipelineInfo rastInfo {
         .vsPath = "./shaders_bin/quad.vert.spv",
         .fsPath = "./shaders_bin/quad.frag.spv",
         .renderPass = &renderPass,
+        .vertexDescription = &vertexDescription
     };
-
     auto pipeline = rastPipelineCreate(ctx, rastInfo);
+
+    std::vector<Vertex2D4C> vertexData(25);
+    for(auto i=0; i<vertexData.size(); i++) {
+        vertexData[i] = RandGen<Vertex2D4C>()();
+    }
+
+    auto vertexBuffer = buffertools::create_buffer_D_data(ctx, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexData.size() * sizeof(Vertex2D4C), vertexData.data());
 
     auto cmdBuffer = ctxAllocCmdBuffer(ctx);
     double ping;
@@ -38,8 +47,10 @@ int main(int argc, char** argv) {
         renderPassInfo.pClearValues = &clearColor;
 
         vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        VkDeviceSize offset = 0;
+        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.buffer, &offset);
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
-        vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+        vkCmdDraw(cmdBuffer, vertexData.size(), 1, 0, 0);
         vkCmdEndRenderPass(cmdBuffer);
         vkCheck(vkEndCommandBuffer(cmdBuffer));
 
@@ -54,6 +65,7 @@ int main(int argc, char** argv) {
     }
 
     ctxFinish(ctx);
+    buffertools::destroyBuffer(ctx, vertexBuffer);
     rastPipelineDestroy(ctx, pipeline);
     renderPassDestroy(ctx, renderPass);
     ctxDestroy(ctx);

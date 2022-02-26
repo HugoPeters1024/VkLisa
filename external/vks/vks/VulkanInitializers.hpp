@@ -601,6 +601,13 @@ namespace vks
 			VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState {};
 			pipelineColorBlendAttachmentState.colorWriteMask = colorWriteMask;
 			pipelineColorBlendAttachmentState.blendEnable = blendEnable;
+			pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 			return pipelineColorBlendAttachmentState;
 		}
 

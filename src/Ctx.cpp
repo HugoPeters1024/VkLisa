@@ -57,11 +57,11 @@ Ctx ctxCreate() {
 }
 
 void ctxDestroy(Ctx& ctx) {
-    logger::debug("shutting down, flushing commands...");
-    vkCheck(vkDeviceWaitIdle(ctx.device));
+    assert(ctx.state == CTX_STATE_FINISHED && "Call finish before destroying the ctx");
     logger::debug("cleaning up");
     vkDestroyCommandPool(ctx.device, ctx.commandPool, nullptr);
 
+    vkDestroyFence(ctx.device, ctx.inFlightFence, nullptr);
     vkDestroySemaphore(ctx.device, ctx.renderFinished, nullptr);
     vkDestroySemaphore(ctx.device, ctx.imageAvailable, nullptr);
     for (auto view : ctx.window.swapchainViews) {
@@ -80,7 +80,8 @@ bool ctxWindowShouldClose(Ctx& ctx) {
 }
 
 FrameCtx& ctxBeginFrame(Ctx& ctx) {
-    vkCheck(vkDeviceWaitIdle(ctx.device));
+    vkWaitForFences(ctx.device, 1, &ctx.inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(ctx.device, 1, &ctx.inFlightFence);
     assert(ctx.state == CTX_STATE_APP_START || ctx.state == CTX_STATE_FRAME_SUBMITTED);
     ctx.state = CTX_STATE_FRAME_STARTED;
     glfwPollEvents();
@@ -105,7 +106,7 @@ void ctxEndFrame(Ctx& ctx, VkCommandBuffer cmdBuffer) {
     submitInfo.pWaitDstStageMask = &waitStage;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &ctx.renderFinished;
-    vkCheck(vkQueueSubmit(ctx.queues.graphics, 1, &submitInfo, VK_NULL_HANDLE));
+    vkCheck(vkQueueSubmit(ctx.queues.graphics, 1, &submitInfo, ctx.inFlightFence));
 
     VkPresentInfoKHR presentInfo {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -126,8 +127,26 @@ VkCommandBuffer ctxAllocCmdBuffer(Ctx& ctx) {
     return cmdBuffer;
 }
 
+void ctxSingleTimeCommand(Ctx& ctx, std::function<void(VkCommandBuffer)> f) {
+    auto cmdBuffer = ctxAllocCmdBuffer(ctx);
+    auto beginInfo = vks::initializers::commandBufferBeginInfo();
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkCheck(vkBeginCommandBuffer(cmdBuffer, &beginInfo));
+    f(cmdBuffer);
+    vkCheck(vkEndCommandBuffer(cmdBuffer));
+
+    auto submitInfo = vks::initializers::submitInfo(&cmdBuffer);
+    vkQueueSubmit(ctx.queues.graphics, 1, &submitInfo, VK_NULL_HANDLE);
+
+    vkCheck(vkQueueWaitIdle(ctx.queues.graphics));
+    vkFreeCommandBuffers(ctx.device, ctx.commandPool, 1, &cmdBuffer);
+}
+
+
 void ctxFinish(Ctx& ctx) {
+    logger::debug("Flushing all GPU commands in preperation of shutdown");
     vkCheck(vkDeviceWaitIdle(ctx.device));
+    ctx.state = CTX_STATE_FINISHED;
 }
 
 // Private implementation
@@ -292,6 +311,9 @@ void _initSyncObjects(Ctx& ctx) {
     auto semInfo = vks::initializers::semaphoreCreateInfo();
     vkCheck(vkCreateSemaphore(ctx.device, &semInfo, nullptr, &ctx.renderFinished));
     vkCheck(vkCreateSemaphore(ctx.device, &semInfo, nullptr, &ctx.imageAvailable));
+
+    auto fenceInfo = vks::initializers::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+    vkCheck(vkCreateFence(ctx.device, &fenceInfo, nullptr, &ctx.inFlightFence));
 }
 
 void _initCommandPool(Ctx& ctx) {

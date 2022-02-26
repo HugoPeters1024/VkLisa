@@ -2,11 +2,13 @@
 #include <precomp.h>
 #include <Ctx.h>
 #include <RenderPass.h>
+#include <Primitives.h>
 
 struct RastPipelineInfo {
     const char* vsPath;
     const char* fsPath;
     RenderPass* renderPass;
+    VertexDescription* vertexDescription;
 };
 
 struct RastPipeline {

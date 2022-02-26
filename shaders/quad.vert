@@ -1,5 +1,8 @@
 #version 460
 
+layout(location = 0) in vec2 vPos;
+layout(location = 1) in vec4 vColor;
+
 vec2 positions[3] = vec2[](
     vec2(-1.0f, -1.0f),
     vec2(3.0f, -1.0f),
@@ -7,9 +10,10 @@ vec2 positions[3] = vec2[](
 );
 
 layout(location = 0) out vec2 uv;
+layout(location = 1) out vec4 color;
 
 void main() {
-    uv = positions[gl_VertexIndex];
-    gl_Position = vec4(uv, 0.0f, 1.0f);
-    uv = (uv + 1.0f) * 0.5f;
+    gl_Position = vec4(vPos, 0.0f, 1.0f);
+    uv = (vPos + 1.0f) * 0.5f;
+    color = vColor;
 }

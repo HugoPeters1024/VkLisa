@@ -21,6 +21,8 @@ namespace logger = spdlog;
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <vks/VulkanInitializers.hpp>
 #include <vks/VulkanTools.h>
 #define vkCheck(f) VK_CHECK_RESULT(f)
