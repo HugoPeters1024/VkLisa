@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     };
     auto pipeline = rastPipelineCreate(ctx, rastInfo);
 
-    std::vector<Vertex2D4C> vertexData(25);
+    std::vector<Vertex2D4C> vertexData(3*100);
     for(auto i=0; i<vertexData.size(); i++) {
         vertexData[i] = RandGen<Vertex2D4C>()();
     }

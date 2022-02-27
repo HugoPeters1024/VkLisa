@@ -8,7 +8,7 @@ uint32_t rand_xorshift(uint32_t seed) {
     return seed;
 }
 
-float randf() {
+float randf(float range) {
     g_seed = rand_xorshift(g_seed);
     uint32_t ret = g_seed;
     // Faster on cuda probably
@@ -21,6 +21,6 @@ float randf() {
     ret |= ieeeOne;                          // Add fractional part to 1.0
 
     float  f = reinterpret_cast<float&>(ret);       // Range [1:2]
-    return f - 1.0;                        // Range [0:1]
+    return (f - 1.0) * range;                        // Range [0:1]
 }
 

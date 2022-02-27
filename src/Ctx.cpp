@@ -59,6 +59,7 @@ Ctx ctxCreate() {
 void ctxDestroy(Ctx& ctx) {
     assert(ctx.state == CTX_STATE_FINISHED && "Call finish before destroying the ctx");
     logger::debug("cleaning up");
+    vmaDestroyAllocator(ctx.allocator);
     vkDestroyCommandPool(ctx.device, ctx.commandPool, nullptr);
 
     vkDestroyFence(ctx.device, ctx.inFlightFence, nullptr);

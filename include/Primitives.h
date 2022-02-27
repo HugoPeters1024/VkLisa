@@ -47,6 +47,6 @@ struct Vertex2D4C {
 template<>
 struct RandGen<Vertex2D4C> {
     Vertex2D4C operator() () const {
-        return { { randf()*2-1, randf()*2-1 }, { randf(), randf(), randf(), randf() } };
+        return { { randf(2.0f)-1, randf(2.0f)-1 }, { randf(0.1f), randf(0.1f), randf(0.1f), randf(0.1f) } };
     }
 };
