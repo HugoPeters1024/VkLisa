@@ -15,8 +15,10 @@ macro(shader)
     SET(shader_src ${shader_src} ${CMAKE_CURRENT_SOURCE_DIR}/shaders_bin/${ARGV0}.spv)
 endmacro()
 
+shader("grid.vert")
 shader("quad.vert")
 shader("quad.frag")
+shader("reduce.comp")
 
 
 add_executable(cvulkan ${src} ${shader_src})

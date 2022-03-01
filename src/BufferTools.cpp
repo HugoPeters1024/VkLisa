@@ -2,7 +2,7 @@
 
 namespace buffertools {
 
-Buffer create_buffer_H2D(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
+Buffer createBufferH2D(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
     auto bufferInfo = vks::initializers::bufferCreateInfo(usage, static_cast<VkDeviceSize>(size));
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_CPU_TO_GPU };
     Buffer ret{};
@@ -10,8 +10,8 @@ Buffer create_buffer_H2D(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
     return ret;
 }
 
-Buffer create_buffer_H2D_data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, void* data) {
-    auto ret = create_buffer_H2D(ctx, usage, size);
+Buffer createBufferH2D_Data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, void* data) {
+    auto ret = createBufferH2D(ctx, usage, size);
 
     void* data_dst;
     vkCheck(vmaMapMemory(ctx.allocator, ret.memory, &data_dst));
@@ -20,7 +20,7 @@ Buffer create_buffer_H2D_data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, v
     return ret;
 }
 
-Buffer create_buffer_D(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
+Buffer createBufferD(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
     auto bufferInfo = vks::initializers::bufferCreateInfo(usage, static_cast<VkDeviceSize>(size));
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_GPU_ONLY };
     Buffer ret{};
@@ -28,9 +28,9 @@ Buffer create_buffer_D(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
     return ret;
 }
 
-Buffer create_buffer_D_data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, void* data) {
-    auto staging = create_buffer_H_data(ctx, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size, data);
-    auto dst = create_buffer_D(ctx, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
+Buffer createBufferD_Data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, void* data) {
+    auto staging = createBufferH_Data(ctx, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size, data);
+    auto dst = createBufferD(ctx, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
 
     ctxSingleTimeCommand(ctx, [&](VkCommandBuffer cmdBuffer) {
         VkBufferCopy copyRegion{};
@@ -42,7 +42,7 @@ Buffer create_buffer_D_data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, voi
     return dst;
 }
 
-Buffer create_buffer_H(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
+Buffer createBufferH(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
     auto bufferInfo = vks::initializers::bufferCreateInfo(usage, static_cast<VkDeviceSize>(size));
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_CPU_ONLY };
     Buffer ret{};
@@ -50,8 +50,8 @@ Buffer create_buffer_H(Ctx& ctx, VkBufferUsageFlags usage, size_t size) {
     return ret;
 }
 
-Buffer create_buffer_H_data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, void* data) {
-    auto ret = create_buffer_H(ctx, usage, size);
+Buffer createBufferH_Data(Ctx& ctx, VkBufferUsageFlags usage, size_t size, void* data) {
+    auto ret = createBufferH(ctx, usage, size);
 
     void* data_dst;
     vkCheck(vmaMapMemory(ctx.allocator, ret.memory, &data_dst));

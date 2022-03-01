@@ -1,7 +1,7 @@
 #include <RenderPass.h>
 
-RenderPass renderPassCreate(const Ctx& ctx, const RenderPassInfo&) {
-    auto colorAttachment = vks::initializers::attachmentDescription(ctx.window.format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+RenderPass renderPassCreate(const Ctx& ctx, const RenderPassInfo& info) {
+    auto colorAttachment = vks::initializers::attachmentDescription(ctx.window.format, info.finalLayout);
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
@@ -34,16 +34,17 @@ RenderPass renderPassCreate(const Ctx& ctx, const RenderPassInfo&) {
     RenderPass pass{};
     vkCheck(vkCreateRenderPass(ctx.device, &renderPassInfo, nullptr, &pass.renderPass));
 
-    pass.framebuffers.resize(ctx.window.swapchainImages.size());
+    pass.framebuffers.resize(info.images.size());
     for(uint32_t i=0; i<pass.framebuffers.size(); i++) {
-        VkImageView attachments[1] { ctx.window.swapchainViews[i] };
+        const Image& image = info.images[i];
+        VkImageView attachments[1] { image.view };
 
         auto framebufferInfo = vks::initializers::framebufferCreateInfo();
         framebufferInfo.renderPass = pass.renderPass;
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.pAttachments = attachments;
-        framebufferInfo.width = ctx.window.width;
-        framebufferInfo.height = ctx.window.height;
+        framebufferInfo.width = image.width;
+        framebufferInfo.height = image.height;
         framebufferInfo.layers = 1;
 
         vkCheck(vkCreateFramebuffer(ctx.device, &framebufferInfo, nullptr, &pass.framebuffers[i]));

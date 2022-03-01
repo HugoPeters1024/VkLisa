@@ -9,6 +9,7 @@ struct RastPipelineInfo {
     const char* fsPath;
     RenderPass* renderPass;
     VertexDescription* vertexDescription;
+    std::vector<VkPushConstantRange> pushConstantRanges;
 };
 
 struct RastPipeline {

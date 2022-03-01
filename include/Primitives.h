@@ -7,14 +7,14 @@ struct VertexDescription {
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 };
 
-struct Vertex2D4C {
-    glm::vec2 pos;
+struct Vertex {
+    glm::vec4 pos;
     glm::vec4 color;
 
     static VkVertexInputBindingDescription getBindingDescription(uint32_t binding=0) {
         return {
             .binding = binding,
-            .stride = sizeof(Vertex2D4C),
+            .stride = sizeof(Vertex),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
         };
     }
@@ -24,14 +24,14 @@ struct Vertex2D4C {
             VkVertexInputAttributeDescription {
                 .location = 0,
                 .binding = binding,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = offsetof(Vertex2D4C, pos),
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+                .offset = offsetof(Vertex, pos),
             },
             VkVertexInputAttributeDescription {
                 .location = 1,
                 .binding = binding,
                 .format = VK_FORMAT_R32G32B32A32_SFLOAT,
-                .offset = offsetof(Vertex2D4C, color),
+                .offset = offsetof(Vertex, color),
             }
         };
     }
@@ -45,8 +45,8 @@ struct Vertex2D4C {
 };
 
 template<>
-struct RandGen<Vertex2D4C> {
-    Vertex2D4C operator() () const {
-        return { { randf(2.0f)-1, randf(2.0f)-1 }, { randf(0.1f), randf(0.1f), randf(0.1f), randf(0.1f) } };
+struct RandGen<Vertex> {
+    Vertex operator() () const {
+        return { { randf(0.5f)-1, randf(0.5f)-1, 0, 0 }, { randf(0.1f), randf(0.1f), randf(0.1f), randf(0.1f)+0.5f } };
     }
 };

@@ -1,8 +1,12 @@
 #pragma once
 #include <precomp.h>
+#include <Types.h>
 #include <Ctx.h>
 
+
 struct RenderPassInfo {
+    VkImageLayout finalLayout;
+    std::vector<Image> images;
 };
 
 struct RenderPass {

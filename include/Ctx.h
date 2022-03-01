@@ -1,5 +1,12 @@
 #pragma once
 #include <precomp.h>
+#include <Types.h>
+
+struct CtxInfo {
+    uint32_t windowWidth = 640;
+    uint32_t windowHeight = 480;
+    std::vector<const char*> extensions;
+};
 
 enum CtxState { 
     CTX_STATE_APP_START,
@@ -10,24 +17,26 @@ enum CtxState {
 
 struct FrameCtx {
     uint32_t imageIdx;
-    VkImage swapchainImage;
-    VkImageView swapchainView;
+    Image swapchainImage;
+    VkCommandBuffer cmdBuffer;
 };
 
 struct Ctx {
+    CtxInfo info;
     CtxState state;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
     VmaAllocator allocator;
     VkCommandPool commandPool;
+    VkDescriptorPool descriptorPool;
+    VkCommandBuffer cmdBuffer;
     struct {
         GLFWwindow* glfwWindow;
         VkSurfaceKHR surface;
         VkFormat format;
         VkSwapchainKHR swapchain;
-        std::vector<VkImage> swapchainImages;
-        std::vector<VkImageView> swapchainViews;
+        std::vector<Image> swapchainImages;
         uint32_t width;
         uint32_t height;
     } window;
@@ -47,7 +56,7 @@ struct Ctx {
 };
 
 
-Ctx ctxCreate();
+Ctx ctxCreate(CtxInfo& info);
 void ctxDestroy(Ctx&);
 bool ctxWindowShouldClose(Ctx&);
 FrameCtx& ctxBeginFrame(Ctx&);

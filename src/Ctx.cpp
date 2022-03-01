@@ -28,6 +28,7 @@ void _initAllocator(Ctx&);
 void _initSwapchain(Ctx&);
 void _initSyncObjects(Ctx&);
 void _initCommandPool(Ctx&);
+void _initDescriptorPool(Ctx& ctx);
 
 
 QueueFamilies _queryQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
@@ -42,8 +43,11 @@ void glfwErrorCallback(int error, const char* description) {
 
 
 // Public
-Ctx ctxCreate() {
-    Ctx ctx{ .state = CTX_STATE_APP_START, };
+Ctx ctxCreate(CtxInfo& info) {
+    Ctx ctx{ 
+        .info = info,
+        .state = CTX_STATE_APP_START, 
+    };
     _initWindow(ctx);
     _initInstance(ctx);
     _initSurface(ctx);
@@ -53,20 +57,22 @@ Ctx ctxCreate() {
     _initSwapchain(ctx);
     _initSyncObjects(ctx);
     _initCommandPool(ctx);
+    _initDescriptorPool(ctx);
     return ctx;
 }
 
 void ctxDestroy(Ctx& ctx) {
     assert(ctx.state == CTX_STATE_FINISHED && "Call finish before destroying the ctx");
     logger::debug("cleaning up");
+    vkDestroyDescriptorPool(ctx.device, ctx.descriptorPool, nullptr);
     vmaDestroyAllocator(ctx.allocator);
     vkDestroyCommandPool(ctx.device, ctx.commandPool, nullptr);
 
     vkDestroyFence(ctx.device, ctx.inFlightFence, nullptr);
     vkDestroySemaphore(ctx.device, ctx.renderFinished, nullptr);
     vkDestroySemaphore(ctx.device, ctx.imageAvailable, nullptr);
-    for (auto view : ctx.window.swapchainViews) {
-        vkDestroyImageView(ctx.device, view, nullptr);
+    for (auto image : ctx.window.swapchainImages) {
+        vkDestroyImageView(ctx.device, image.view, nullptr);
     }
     vkDestroySwapchainKHR(ctx.device, ctx.window.swapchain, nullptr);
     vkDestroyDevice(ctx.device, nullptr);
@@ -89,10 +95,12 @@ FrameCtx& ctxBeginFrame(Ctx& ctx) {
 
     ctx.frameCtx = {
         .swapchainImage = ctx.window.swapchainImages[0],
-        .swapchainView = ctx.window.swapchainViews[0],
+        .cmdBuffer = ctx.cmdBuffer,
     };
 
     vkAcquireNextImageKHR(ctx.device, ctx.window.swapchain, UINT64_MAX, ctx.imageAvailable, VK_NULL_HANDLE, &ctx.frameCtx.imageIdx);
+
+    vkCheck(vkResetCommandBuffer(ctx.frameCtx.cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
     return ctx.frameCtx;
 }
 
@@ -163,6 +171,11 @@ void _initInstance(Ctx& ctx) {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
+    for (auto ext : ctx.info.extensions) {
+        logger::info("Enabling extension: {}", ext);
+        extensions.push_back(ext);
+    }
+
     auto createInfo = vks::initializers::instanceInfo(&appInfo, validationLayers, extensions);
 
     uint32_t glfwExtensionCount;
@@ -183,7 +196,8 @@ void _initWindow(Ctx& ctx) {
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwSetErrorCallback(glfwErrorCallback);
-    ctx.window.glfwWindow = glfwCreateWindow(640, 480, "CVulkan", nullptr, nullptr);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    ctx.window.glfwWindow = glfwCreateWindow(ctx.info.windowWidth, ctx.info.windowHeight, "CVulkan", nullptr, nullptr);
     if (!ctx.window.glfwWindow) {
         logger::crash("Unable to open window");
     }
@@ -295,14 +309,25 @@ void _initSwapchain(Ctx& ctx) {
 
     // Retrieve the images
     vkGetSwapchainImagesKHR(ctx.device, ctx.window.swapchain, &imageCount, nullptr);
-    ctx.window.swapchainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(ctx.device, ctx.window.swapchain, &imageCount, ctx.window.swapchainImages.data());
+    VkImage images[imageCount];
+    vkGetSwapchainImagesKHR(ctx.device, ctx.window.swapchain, &imageCount, images);
 
     // Create image views
-    ctx.window.swapchainViews.resize(imageCount);
+    VkImageView imageViews[imageCount];
     for (uint32_t i=0; i<imageCount; ++i) {
-        auto viewInfo = vks::initializers::imageViewCreateInfo(ctx.window.swapchainImages[i], format.format, VK_IMAGE_ASPECT_COLOR_BIT);
-        vkCheck(vkCreateImageView(ctx.device, &viewInfo, nullptr, &ctx.window.swapchainViews[i]));
+        auto viewInfo = vks::initializers::imageViewCreateInfo(images[i], format.format, VK_IMAGE_ASPECT_COLOR_BIT);
+        vkCheck(vkCreateImageView(ctx.device, &viewInfo, nullptr, &imageViews[i]));
+    }
+
+    // Collect in the context state
+    ctx.window.swapchainImages.resize(imageCount);
+    for(uint32_t i=0; i<imageCount; i++) {
+        ctx.window.swapchainImages[i] = {
+            .image = images[i],
+            .view = imageViews[i],
+            .width = ctx.info.windowWidth,
+            .height = ctx.info.windowHeight,
+        };
     }
 
     logger::trace("created swapchain");
@@ -322,6 +347,33 @@ void _initCommandPool(Ctx& ctx) {
     createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     vkCheck(vkCreateCommandPool(ctx.device, &createInfo, nullptr, &ctx.commandPool));
+
+    ctx.cmdBuffer = ctxAllocCmdBuffer(ctx);
+}
+
+void _initDescriptorPool(Ctx& ctx) {
+    VkDescriptorPoolSize pool_sizes[] = {
+            { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+    };
+
+    VkDescriptorPoolCreateInfo poolInfo {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = 100,
+            .poolSizeCount = std::size(pool_sizes),
+            .pPoolSizes = pool_sizes,
+    };
+
+    vkCheck(vkCreateDescriptorPool(ctx.device, &poolInfo, nullptr, &ctx.descriptorPool));
 }
 
 QueueFamilies _queryQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {

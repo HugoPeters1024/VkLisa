@@ -12,6 +12,8 @@ RastPipeline rastPipelineCreate(const Ctx& ctx, const RastPipelineInfo& info) {
 
     // pipeline layout
     auto pipelineLayoutInfo = vks::initializers::pipelineLayoutCreateInfo();
+    pipelineLayoutInfo.pushConstantRangeCount = info.pushConstantRanges.size();
+    pipelineLayoutInfo.pPushConstantRanges = info.pushConstantRanges.data();
     vkCheck(vkCreatePipelineLayout(ctx.device, &pipelineLayoutInfo, nullptr, &ret.pipelineLayout));
 
 
