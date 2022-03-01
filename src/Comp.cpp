@@ -4,9 +4,15 @@ CompPipeline compCreate(const Ctx& ctx, const CompInfo& info) {
     CompPipeline ret{};
     ret.bindingDescription = info.bindingDescription;
 
-    auto bufferBinding = vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, 0);
-    auto resultBinding = vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, 1);
-    std::vector<VkDescriptorSetLayoutBinding> bindings { bufferBinding, resultBinding };
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    for (auto binding : info.bindingDescription) {
+        bindings.push_back(VkDescriptorSetLayoutBinding {
+                .binding = binding.first,
+                .descriptorType = binding.second,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+        });
+    }
     auto descriptorInfo = vks::initializers::descriptorSetLayoutCreateInfo(bindings);
 
     vkCheck(vkCreateDescriptorSetLayout(ctx.device, &descriptorInfo, nullptr, &ret.descriptorSetLayout));

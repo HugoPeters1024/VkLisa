@@ -47,19 +47,6 @@ void printSubgroupInfo(const Ctx& ctx) {
     logger::info("warp size: {}", subgroupProperties.subgroupSize);
 }
 
-CompPipeline mkCompPipeline(const Ctx& ctx) {
-    auto pushInfo = vks::initializers::pushConstantRange(VK_SHADER_STAGE_COMPUTE_BIT, sizeof(CompPushConstants), 0);
-    CompInfo compInfo {
-        .compShaderPath = "./shaders_bin/reduce.comp.spv",
-        .bindingDescription = {
-            { 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-            { 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-        },
-        .pushConstantRange = &pushInfo,
-    };
-    return compCreate(ctx, compInfo);
-}
-
 int main(int argc, char** argv) {
     logger::set_level(spdlog::level::trace);
 
@@ -97,25 +84,36 @@ int main(int argc, char** argv) {
         .srcImage = target,
         .beforeLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
-
     auto quadRender = quadRenderCreate(ctx, quadRenderInfo);
 
+    auto compPushInfo = vks::initializers::pushConstantRange(VK_SHADER_STAGE_COMPUTE_BIT, sizeof(CompPushConstants), 0);
+    CompInfo compInfo {
+        .compShaderPath = "./shaders_bin/reduce.comp.spv",
+        .bindingDescription = {
+            { 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+            { 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+        },
+        .pushConstantRange = &compPushInfo,
+    };
+    auto comp = compCreate(ctx, compInfo);
+
     uint zero = 0;
-    auto resultBuffer = buffertools::createBufferD_Data(ctx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 1 * sizeof(uint32_t), &zero);
-    auto comp = mkCompPipeline(ctx);
+    std::vector<uint32_t> ints(1024*1024, 1);
+    auto intBuffer = buffertools::createBufferD_Data(ctx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ints.size() * sizeof(uint32_t), ints.data());
+    auto resultBuffer = buffertools::createBufferH2D_Data(ctx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 1 * sizeof(uint32_t), &zero);
 
 
     CompResourceBindings compBindings {
-        { 0, gridRender.vertexBuffer.buffer },
+        { 0, intBuffer.buffer },
         { 1, resultBuffer.buffer },
     };
+    VkDescriptorSet compDescriptorSet = compCreateDescriptorSet(ctx, comp, compBindings);
 
     CompPushConstants compPush {
         .nrVertices = static_cast<uint32_t>(vertexData.size()),
         .seed = 1,
     };
 
-    auto compDescriptorSet = compCreateDescriptorSet(ctx, comp, compBindings);
 
     double ping;
     uint32_t frameCounter = 0;
@@ -130,18 +128,31 @@ int main(int argc, char** argv) {
         grindRenderRecord(ctx, gridRender, gridPush);
         quadRenderRecord(ctx, quadRender);
 
-        vkCmdBindPipeline(frame.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, comp.pipeline);
-        vkCmdPushConstants(frame.cmdBuffer, comp.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(CompPushConstants), &compPush);
-        vkCmdBindDescriptorSets(frame.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, comp.pipelineLayout, 0, 1, &compDescriptorSet, 0, nullptr);
-        vkCmdDispatch(frame.cmdBuffer, vertexData.size()/256+1, 1, 1);
+        if (frameCounter == 0) {
+
+            vkCmdBindPipeline(frame.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, comp.pipeline);
+            vkCmdPushConstants(frame.cmdBuffer, comp.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(CompPushConstants), &compPush);
+            vkCmdBindDescriptorSets(frame.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, comp.pipelineLayout, 0, 1, &compDescriptorSet, 0, nullptr);
+            vkCmdDispatch(frame.cmdBuffer, ints.size()/256+1, 1, 1);
+
+            auto barrier = vks::initializers::memoryBarrier();
+            barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            vkCmdPipelineBarrier(frame.cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 1, &barrier, 0, nullptr, 0, nullptr);
+        }
 
         vkCheck(vkEndCommandBuffer(frame.cmdBuffer));
         ctxEndFrame(ctx, frame.cmdBuffer);
 
-        if (frameCounter % 1 == 0) {
+        if (frameCounter % 100 == 0) {
             compPush.seed = 3*rand_xorshift(17*compPush.seed);
             double fps = 1.0f / (glfwGetTime() - ping);
             logger::info("FPS: {}", fps);
+
+            uint32_t* data;
+            vmaMapMemory(ctx.allocator, resultBuffer.memory, (void**)&data);
+            logger::info("result: {}", data[0]);
+            vmaUnmapMemory(ctx.allocator, resultBuffer.memory);
         }
         
         frameCounter++;
@@ -152,6 +163,7 @@ int main(int argc, char** argv) {
     gridRenderDestroy(ctx, gridRender);
     quadRenderDestroy(ctx, quadRender);
     compDestroy(ctx, comp);
+    buffertools::destroyBuffer(ctx, intBuffer);
     buffertools::destroyBuffer(ctx, resultBuffer);
     ctxDestroy(ctx);
     return 0;
