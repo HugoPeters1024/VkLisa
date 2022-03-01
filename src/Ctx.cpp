@@ -279,7 +279,7 @@ void _initSwapchain(Ctx& ctx) {
     auto format = _chooseSurfaceFormat(support.formats);
     auto mode = _choosePresentMode(support.presentModes);
     auto extent = _chooseSwapchainExtent(ctx.window.glfwWindow, support.capabilities);
-    ctx.window.format = format.format;
+    ctx.window.imageFormat = format.format;
     ctx.window.width = extent.width;
     ctx.window.height = extent.height;
 
@@ -325,6 +325,7 @@ void _initSwapchain(Ctx& ctx) {
         ctx.window.swapchainImages[i] = {
             .image = images[i],
             .view = imageViews[i],
+            .format = ctx.window.imageFormat,
             .width = ctx.info.windowWidth,
             .height = ctx.info.windowHeight,
         };

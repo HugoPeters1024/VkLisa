@@ -16,6 +16,7 @@ macro(shader)
 endmacro()
 
 shader("grid.vert")
+shader("grid.frag")
 shader("quad.vert")
 shader("quad.frag")
 shader("reduce.comp")

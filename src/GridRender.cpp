@@ -3,16 +3,17 @@
 GridRender gridRenderCreate(Ctx& ctx, GridRenderInfo& info) {
     GridRender gridRender{ .info = info };
 
+
     RenderPassInfo renderPassInfo{
-        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        .images = ctx.window.swapchainImages,
+        .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .images = {info.target},
     };
     gridRender.renderPass = renderPassCreate(ctx, renderPassInfo);
 
     auto vertexDescription = Vertex::getVertexDescription();
     RastPipelineInfo rastInfo {
         .vsPath = "./shaders_bin/grid.vert.spv",
-        .fsPath = "./shaders_bin/quad.frag.spv",
+        .fsPath = "./shaders_bin/grid.frag.spv",
         .renderPass = &gridRender.renderPass,
         .vertexDescription = &vertexDescription,
         .pushConstantRanges = {
@@ -41,7 +42,7 @@ void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridPushConstants& push
     VkClearValue clearColor { .color = {0.0f, 0.0f, 0.0f, 0.0f}, };
     auto renderPassInfo = vks::initializers::renderPassBeginInfo(
             gridRender.renderPass.renderPass,
-            gridRender.renderPass.framebuffers[ctx.frameCtx.imageIdx]);
+            gridRender.renderPass.framebuffers[0]);
     renderPassInfo.renderArea.extent = {ctx.window.width,ctx.window.height};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;

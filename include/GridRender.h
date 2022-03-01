@@ -4,9 +4,11 @@
 #include <RenderPass.h>
 #include <Rast.h>
 #include <BufferTools.h>
+#include <ImageTools.h>
 
 struct GridRenderInfo {
     std::vector<Vertex>* vertexData;
+    Image target;
 };
 
 struct GridPushConstants { 

@@ -1,9 +1,12 @@
 #include <RenderPass.h>
 
 RenderPass renderPassCreate(const Ctx& ctx, const RenderPassInfo& info) {
-    auto colorAttachment = vks::initializers::attachmentDescription(ctx.window.format, info.finalLayout);
+    assert(info.images.size() > 0);
+    auto colorAttachment = vks::initializers::attachmentDescription(ctx.window.imageFormat, info.finalLayout);
+    colorAttachment.initialLayout = info.beforeLayout;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.format = info.images[0].format;
 
     auto attachmentReference = vks::initializers::attachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkSubpassDescription subpass {

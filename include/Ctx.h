@@ -34,7 +34,7 @@ struct Ctx {
     struct {
         GLFWwindow* glfwWindow;
         VkSurfaceKHR surface;
-        VkFormat format;
+        VkFormat imageFormat;
         VkSwapchainKHR swapchain;
         std::vector<Image> swapchainImages;
         uint32_t width;

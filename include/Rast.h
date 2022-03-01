@@ -10,6 +10,7 @@ struct RastPipelineInfo {
     RenderPass* renderPass;
     VertexDescription* vertexDescription;
     std::vector<VkPushConstantRange> pushConstantRanges;
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 };
 
 struct RastPipeline {

@@ -5,11 +5,13 @@
 #include <Comp.h>
 #include <BufferTools.h>
 #include <GridRender.h>
+#include <QuadRender.h>
 
 const uint32_t g_imageWidth = 128;
 const uint32_t g_imageHeight = 128;
-const uint32_t g_instancesWidth = 5;
-const uint32_t g_instancesHeight = 5;
+const uint32_t g_trianglesPerInstance = 10;
+const uint32_t g_instancesWidth = 8;
+const uint32_t g_instancesHeight = 8;
 const uint32_t g_windowWidth = g_imageWidth * g_instancesWidth;
 const uint32_t g_windowHeight = g_imageHeight * g_instancesHeight;
 
@@ -64,7 +66,7 @@ int main(int argc, char** argv) {
     auto ctx = mkCtx();
     printSubgroupInfo(ctx);
 
-    std::vector<Vertex> vertexData(3*9*10);
+    std::vector<Vertex> vertexData(3*g_instancesWidth*g_instancesHeight*g_trianglesPerInstance);
     for(auto i=0; i<vertexData.size(); i++) {
         vertexData[i] = Vertex {
             { randf(), randf(), 0, 0 },
@@ -72,9 +74,17 @@ int main(int argc, char** argv) {
         };
     }
 
+    Image target = createImageD(
+            ctx, ctx.window.width, ctx.window.height,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_FORMAT_R32G32B32A32_SFLOAT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
     GridRenderInfo gridRenderInfo {
         .vertexData = &vertexData,
+        .target = target,
     };
+
     auto gridRender = gridRenderCreate(ctx, gridRenderInfo);
 
     GridPushConstants gridPush {
@@ -82,6 +92,13 @@ int main(int argc, char** argv) {
         .nrInstanceWidth = g_instancesWidth,
         .nrInstancesHeight = g_instancesHeight,
     };
+
+    QuadRenderInfo quadRenderInfo {
+        .srcImage = target,
+        .beforeLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    auto quadRender = quadRenderCreate(ctx, quadRenderInfo);
 
     uint zero = 0;
     auto resultBuffer = buffertools::createBufferD_Data(ctx, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 1 * sizeof(uint32_t), &zero);
@@ -111,6 +128,8 @@ int main(int argc, char** argv) {
         vkCheck(vkBeginCommandBuffer(frame.cmdBuffer, &beginInfo));
 
         grindRenderRecord(ctx, gridRender, gridPush);
+        quadRenderRecord(ctx, quadRender);
+
         vkCmdBindPipeline(frame.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, comp.pipeline);
         vkCmdPushConstants(frame.cmdBuffer, comp.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(CompPushConstants), &compPush);
         vkCmdBindDescriptorSets(frame.cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, comp.pipelineLayout, 0, 1, &compDescriptorSet, 0, nullptr);
@@ -119,7 +138,7 @@ int main(int argc, char** argv) {
         vkCheck(vkEndCommandBuffer(frame.cmdBuffer));
         ctxEndFrame(ctx, frame.cmdBuffer);
 
-        if (frameCounter % 10 == 0) {
+        if (frameCounter % 1 == 0) {
             compPush.seed = 3*rand_xorshift(17*compPush.seed);
             double fps = 1.0f / (glfwGetTime() - ping);
             logger::info("FPS: {}", fps);
@@ -129,7 +148,9 @@ int main(int argc, char** argv) {
     }
 
     ctxFinish(ctx);
+    destroyImage(ctx, target);
     gridRenderDestroy(ctx, gridRender);
+    quadRenderDestroy(ctx, quadRender);
     compDestroy(ctx, comp);
     buffertools::destroyBuffer(ctx, resultBuffer);
     ctxDestroy(ctx);

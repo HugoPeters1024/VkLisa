@@ -5,6 +5,7 @@
 
 
 struct RenderPassInfo {
+    VkImageLayout beforeLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     VkImageLayout finalLayout;
     std::vector<Image> images;
 };
