@@ -17,6 +17,7 @@ enum CtxState {
 
 struct FrameCtx {
     uint32_t imageIdx;
+    uint32_t frameIdx = 0;
     Image swapchainImage;
     VkCommandBuffer cmdBuffer;
 };

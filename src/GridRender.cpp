@@ -22,16 +22,11 @@ GridRender gridRenderCreate(Ctx& ctx, GridRenderInfo& info) {
     };
     gridRender.pipeline = rastPipelineCreate(ctx, rastInfo);
 
-    gridRender.vertexBuffer = buffertools::createBufferD_Data(
-            ctx,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            info.vertexData->size() * sizeof(Vertex), info.vertexData->data());
 
     return gridRender;
 }
 
 void gridRenderDestroy(Ctx& ctx, GridRender& gridRender) {
-    buffertools::destroyBuffer(ctx, gridRender.vertexBuffer);
     rastPipelineDestroy(ctx, gridRender.pipeline);
     renderPassDestroy(ctx, gridRender.renderPass);
 }
@@ -43,16 +38,16 @@ void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridPushConstants& push
     auto renderPassInfo = vks::initializers::renderPassBeginInfo(
             gridRender.renderPass.renderPass,
             gridRender.renderPass.framebuffers[0]);
-    renderPassInfo.renderArea.extent = {ctx.window.width,ctx.window.height};
+    renderPassInfo.renderArea.extent = {gridRender.info.target.width, gridRender.info.target.height};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
     vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     VkDeviceSize offset = 0;
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gridRender.pipeline.pipeline);
-    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &gridRender.vertexBuffer.buffer, &offset);
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &gridRender.info.buffers[0]->buffer, &offset);
     vkCmdPushConstants(cmdBuffer, gridRender.pipeline.pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GridPushConstants), &push);
-    vkCmdDraw(cmdBuffer, gridRender.info.vertexData->size(), 1, 0, 0);
+    vkCmdDraw(cmdBuffer, 3 * push.nrTriangles, 1, 0, 0);
     vkCmdEndRenderPass(cmdBuffer);
 }

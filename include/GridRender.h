@@ -7,7 +7,7 @@
 #include <ImageTools.h>
 
 struct GridRenderInfo {
-    std::vector<Vertex>* vertexData;
+    Buffer* buffers[2];
     Image target;
 };
 
@@ -21,7 +21,6 @@ struct GridRender {
     GridRenderInfo info;
     RenderPass renderPass;
     RastPipeline pipeline;
-    Buffer vertexBuffer;
 };
 
 GridRender gridRenderCreate(Ctx& ctx, GridRenderInfo& info);

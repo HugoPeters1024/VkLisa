@@ -20,6 +20,7 @@ shader("grid.frag")
 shader("quad.vert")
 shader("quad.frag")
 shader("reduce.comp")
+shader("evolve.comp")
 
 
 add_executable(cvulkan ${src} ${shader_src})

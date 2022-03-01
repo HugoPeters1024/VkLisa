@@ -93,10 +93,9 @@ FrameCtx& ctxBeginFrame(Ctx& ctx) {
     ctx.state = CTX_STATE_FRAME_STARTED;
     glfwPollEvents();
 
-    ctx.frameCtx = {
-        .swapchainImage = ctx.window.swapchainImages[0],
-        .cmdBuffer = ctx.cmdBuffer,
-    };
+    ctx.frameCtx.swapchainImage = ctx.window.swapchainImages[0];
+    ctx.frameCtx.cmdBuffer = ctx.cmdBuffer;
+    ctx.frameCtx.frameIdx++;
 
     vkAcquireNextImageKHR(ctx.device, ctx.window.swapchain, UINT64_MAX, ctx.imageAvailable, VK_NULL_HANDLE, &ctx.frameCtx.imageIdx);
 
