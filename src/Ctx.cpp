@@ -166,21 +166,23 @@ void _initInstance(Ctx& ctx) {
         validationLayers.push_back("VK_LAYER_KHRONOS_validation");
     }
 
-    std::vector<const char*> extensions {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    };
+    std::vector<const char*> extensions = ctx.info.instanceExtensions;
 
-    for (auto ext : ctx.info.extensions) {
-        logger::info("Enabling extension: {}", ext);
-        extensions.push_back(ext);
-    }
 
     auto createInfo = vks::initializers::instanceInfo(&appInfo, validationLayers, extensions);
 
     uint32_t glfwExtensionCount;
     auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    for(uint32_t i=0; i<glfwExtensionCount; i++) {
+        extensions.push_back(glfwExtensions[i]);
+    }
+
+    createInfo.enabledExtensionCount = extensions.size();
+    createInfo.ppEnabledExtensionNames = extensions.data();
+
+    for (auto ext : extensions) {
+        logger::info("Enabling instance extension: {}", ext);
+    }
 
 
     vkCheck(vkCreateInstance(&createInfo, nullptr, &ctx.instance));
@@ -246,9 +248,12 @@ void _initDevice(Ctx& ctx) {
         queueInfos[i++] = vks::initializers::queueCreateInfo(family, &priority);
     };
 
-    std::vector<const char*> deviceExtensions{
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    };
+    std::vector<const char*> deviceExtensions = ctx.info.deviceExtensions;
+    deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+    for(auto ext : deviceExtensions) {
+        logger::info("Enabling device extension: {}", ext);
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures{ 
     };

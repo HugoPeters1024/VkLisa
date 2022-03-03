@@ -7,7 +7,7 @@ file(GLOB_RECURSE src CONFIGURE_DEPENDS "include/*.h" "include/*.hpp" "src/*.cpp
 macro(shader)
     add_custom_command(
             OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/shaders_bin/${ARGV0}.spv
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${ARGV0}
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*
             COMMAND /usr/bin/glslc
             ARGS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${ARGV0} -o ${CMAKE_CURRENT_SOURCE_DIR}/shaders_bin/${ARGV0}.spv -O --target-env=vulkan1.2
             COMMENT building shaders

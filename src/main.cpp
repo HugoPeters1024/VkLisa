@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
         vkCheck(vkEndCommandBuffer(frame.cmdBuffer));
         ctxEndFrame(ctx, frame.cmdBuffer);
 
-        if (frameCounter % 100 == 0) {
+        if (frameCounter % 1000 == 0) {
             double fps = 1.0f / (glfwGetTime() - ping);
             logger::info("FPS: {}", fps);
         }
@@ -102,9 +102,12 @@ int main(int argc, char** argv) {
     for (auto& buffer : resources.vertexBuffers) {
         buffertools::destroyBuffer(ctx, buffer);
     }
+    buffertools::destroyBuffer(ctx, resources.scoresBuffer);
+    buffertools::destroyBuffer(ctx, resources.parentsBuffer);
 
     destroyImage(ctx, resources.gridTarget);
     evolveDestroy(ctx, evolve);
+    lotteryDestroy(ctx, lottery);
     gridRenderDestroy(ctx, gridRender);
     quadRenderDestroy(ctx, quadRender);
     ctxDestroy(ctx);
@@ -115,7 +118,8 @@ Ctx mkCtx() {
     CtxInfo info { 
         .windowWidth = g_windowWidth,
         .windowHeight = g_windowHeight,
-        .extensions = {}
+        .instanceExtensions = {},
+        .deviceExtensions = {VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME},
     };
 
     return ctxCreate(info);

@@ -5,7 +5,8 @@
 struct CtxInfo {
     uint32_t windowWidth = 640;
     uint32_t windowHeight = 480;
-    std::vector<const char*> extensions;
+    std::vector<const char*> instanceExtensions;
+    std::vector<const char*> deviceExtensions;
 };
 
 enum CtxState { 

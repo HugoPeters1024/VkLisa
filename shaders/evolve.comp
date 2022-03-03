@@ -2,9 +2,9 @@
 #include "common.glsl"
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-layout(std430, binding = 0, set = 0) buffer Input { Vertex bufferIn[]; };
+layout(std430, binding = 0, set = 0) readonly buffer Input { Vertex bufferIn[]; };
 layout(std430, binding = 1, set = 0) buffer Output { Vertex bufferOut[]; };
-layout(std430, binding = 2, set = 0) buffer Parents { uint parents[]; };
+layout(std430, binding = 2, set = 0) readonly buffer Parents { uint parents[]; };
 
 layout(push_constant) uniform PushConstants {
     uint nrVertices;
@@ -32,7 +32,7 @@ void main() {
 
 
     // mutation
-    if (randf() < 0.10f) {
+    if (randf() < 0.01f) {
         bufferOut[i] = randVertex();
     } else {
         if (randu() % 2 == 0) {

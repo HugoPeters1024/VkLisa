@@ -30,9 +30,9 @@ Vertex randVertex() {
     Vertex ret;
     ret.pos.x = randf();
     ret.pos.y = randf();
-    ret.pos.r = randf();
-    ret.pos.g = randf();
-    ret.pos.b = randf();
-    ret.pos.a = randf();
+    ret.color.r = randf();
+    ret.color.g = randf();
+    ret.color.b = randf();
+    ret.color.a = randf() * 0.05f;
     return ret;
 }
