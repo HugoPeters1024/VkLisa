@@ -17,7 +17,7 @@ GridRender gridRenderCreate(Ctx& ctx, GridRenderInfo& info) {
         .renderPass = &gridRender.renderPass,
         .vertexDescription = &vertexDescription,
         .pushConstantRanges = {
-            vks::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(GridPushConstants), 0),
+            vks::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(GridRenderArgs), 0),
         },
     };
     gridRender.pipeline = rastPipelineCreate(ctx, rastInfo);
@@ -31,7 +31,7 @@ void gridRenderDestroy(Ctx& ctx, GridRender& gridRender) {
     renderPassDestroy(ctx, gridRender.renderPass);
 }
 
-void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridPushConstants& push) {
+void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridRenderArgs& push) {
     VkCommandBuffer cmdBuffer = ctx.frameCtx.cmdBuffer;
 
     VkClearValue clearColor { .color = {0.0f, 0.0f, 0.0f, 0.0f}, };
@@ -47,7 +47,7 @@ void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridPushConstants& push
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gridRender.pipeline.pipeline);
     vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &gridRender.info.buffers[0]->buffer, &offset);
     vkCmdPushConstants(cmdBuffer, gridRender.pipeline.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GridPushConstants), &push);
+            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GridRenderArgs), &push);
     vkCmdDraw(cmdBuffer, 3 * push.nrTriangles, 1, 0, 0);
     vkCmdEndRenderPass(cmdBuffer);
 }

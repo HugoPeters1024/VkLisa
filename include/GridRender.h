@@ -11,7 +11,7 @@ struct GridRenderInfo {
     Image target;
 };
 
-struct GridPushConstants { 
+struct GridRenderArgs { 
     uint32_t nrTriangles;
     uint32_t nrInstanceWidth;
     uint32_t nrInstancesHeight;
@@ -25,4 +25,4 @@ struct GridRender {
 
 GridRender gridRenderCreate(Ctx& ctx, GridRenderInfo& info);
 void gridRenderDestroy(Ctx& ctx, GridRender& gridRender);
-void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridPushConstants& push);
+void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridRenderArgs& push);

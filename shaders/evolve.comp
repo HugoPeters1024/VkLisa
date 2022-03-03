@@ -1,56 +1,45 @@
 #version 460
-
-struct Vertex {
-    vec4 pos;
-    vec4 color;
-};
-
-layout(push_constant) uniform PushConstants {
-    uint nrVertices;
-    uint seed;
-} constants;
-
-uint rand_xorshift(in uint seed) {
-    // Xorshift algorithm from George Marsaglia's paper
-    seed ^= (seed << 13);
-    seed ^= (seed >> 17);
-    seed ^= (seed << 5);
-    return seed;
-}
-
-uint g_seed = 23 * rand_xorshift(constants.seed + rand_xorshift(17 * gl_GlobalInvocationID.x));
-uint randu() {
-    g_seed = rand_xorshift(g_seed);
-    return g_seed;
-}
-float randf() {
-    // Faster on GPU probably
-    return randu() * 2.3283064365387e-10f;
-}
-
-Vertex randVertex() {
-    Vertex ret;
-    ret.pos.x = randf();
-    ret.pos.y = randf();
-    ret.pos.r = randf();
-    ret.pos.g = randf();
-    ret.pos.b = randf();
-    ret.pos.a = randf();
-    return ret;
-}
+#include "common.glsl"
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 layout(std430, binding = 0, set = 0) buffer Input { Vertex bufferIn[]; };
 layout(std430, binding = 1, set = 0) buffer Output { Vertex bufferOut[]; };
+layout(std430, binding = 2, set = 0) buffer Parents { uint parents[]; };
+
+layout(push_constant) uniform PushConstants {
+    uint nrVertices;
+    uint nrTrianglesPerInstance;
+    uint seed;
+} constants;
 
 void main() {
     uint i = gl_GlobalInvocationID.x;
     if (i >= constants.nrVertices) {
         return;
     }
+    initRand(constants.seed);
 
-    uint instanceIdx = i/30;
+    uint triangleId = i / 3;
+    uint instanceId = triangleId / constants.nrTrianglesPerInstance;
+    uint vertexOffset = i % (3 * constants.nrTrianglesPerInstance);
 
-    if (randu() % 1 == 0)
+    uint parent0 = parents[2*instanceId+0];
+    uint parent1 = parents[2*instanceId+1];
+
+
+    Vertex vparent0 = bufferIn[3 * constants.nrTrianglesPerInstance * parent0 + vertexOffset];
+    Vertex vparent1 = bufferIn[3 * constants.nrTrianglesPerInstance * parent1 + vertexOffset];
+
+
+    // mutation
+    if (randf() < 0.10f) {
         bufferOut[i] = randVertex();
+    } else {
+        if (randu() % 2 == 0) {
+            bufferOut[i] = vparent0;
+        } else {
+            bufferOut[i] = vparent1;
+        }
+    }
+
 }

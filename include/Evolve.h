@@ -4,7 +4,8 @@
 #include <BufferTools.h>
 
 struct EvolveInfo {
-    Buffer* buffers[2];
+    Buffer* vertexBuffers[2];
+    Buffer* parentBuffer;
 };
 
 struct Evolve {
@@ -14,6 +15,7 @@ struct Evolve {
 
 struct EvolveArgs {
     uint32_t nrVertices;
+    uint32_t nrTrianglesPerInstance;
     uint32_t seed;
 };
 

@@ -1,0 +1,53 @@
+#version 460
+#include "common.glsl"
+
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_EXT_shader_atomic_float : enable
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+coherent layout(binding = 0, set = 0) buffer Input { float bufferScores[]; };
+layout(binding = 1, set = 0) buffer Output { uint bufferParents[]; };
+
+layout(push_constant) uniform PushConstants {
+    uint nrInstances;
+    uint seed;
+} constants;
+
+uint draw(in float total) {
+    float ballot = randf() * total;
+    float count = 0.0f;
+    for(uint instance = 0; instance < constants.nrInstances; instance += 1) {
+        count += bufferScores[instance];
+        if (count >= ballot) {
+            return instance;
+        }
+    }
+    return 0;
+}
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= constants.nrInstances) {
+        return;
+    }
+
+    float value = bufferScores[i];
+    float sum = subgroupAdd(value);
+    if (subgroupElect()) {
+        atomicAdd(bufferScores[constants.nrInstances], sum);
+    }
+
+    initRand(constants.seed);
+
+    // Only works per work group!!!!!!!!
+    // Delayed as long as possible
+    memoryBarrierBuffer();
+    float total = bufferScores[constants.nrInstances];
+    memoryBarrierBuffer();
+    // Set the memory back to zero for the next round
+    if (i == 0) { bufferScores[constants.nrInstances] = 0; }
+
+    bufferParents[i*2+0] = draw(total);
+    bufferParents[i*2+1] = draw(total);
+}

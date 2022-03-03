@@ -249,9 +249,19 @@ void _initDevice(Ctx& ctx) {
     std::vector<const char*> deviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
-    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    VkPhysicalDeviceFeatures deviceFeatures{ 
+    };
+
+    // extra features
+    VkPhysicalDeviceShaderAtomicFloatFeaturesEXT enabledAtomicsFeatures {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT,
+        .shaderBufferFloat32AtomicAdd = VK_TRUE,
+    };
+
 
     auto deviceInfo = vks::initializers::deviceCreateInfo(queueInfos, deviceExtensions, &deviceFeatures);
+    deviceInfo.pNext = &enabledAtomicsFeatures;
 
     vkCheck(vkCreateDevice(ctx.physicalDevice, &deviceInfo, nullptr, &ctx.device));
     vkGetDeviceQueue(ctx.device, indices.compute, 0, &ctx.queues.compute);
@@ -445,6 +455,8 @@ VkSurfaceFormatKHR _chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& f
 }
 
 VkPresentModeKHR _choosePresentMode(const std::vector<VkPresentModeKHR>& modes) {
+    // Force no vsync
+    return VK_PRESENT_MODE_IMMEDIATE_KHR;
     for (const auto& mode : modes) {
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
             return mode;

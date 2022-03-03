@@ -9,20 +9,23 @@ Evolve evolveCreate(Ctx& ctx, EvolveInfo& info) {
         .bindingDescription = {
             { 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
             { 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+            { 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
         },
         .pushConstantRange = &pushConstant,
     };
     ret.pipeline = compCreate(ctx, compInfo);
 
     CompResourceBindings bindings0 {
-        { 0, info.buffers[0]->buffer },
-        { 1, info.buffers[1]->buffer },
+        { 0, info.vertexBuffers[0]->buffer },
+        { 1, info.vertexBuffers[1]->buffer },
+        { 2, info.parentBuffer->buffer },
     };
     ret.descriptorSets[0] = compCreateDescriptorSet(ctx, ret.pipeline, bindings0);
 
     CompResourceBindings bindings1 {
-        { 0, info.buffers[1]->buffer },
-        { 1, info.buffers[0]->buffer },
+        { 0, info.vertexBuffers[1]->buffer },
+        { 1, info.vertexBuffers[0]->buffer },
+        { 2, info.parentBuffer->buffer },
     };
     ret.descriptorSets[1] = compCreateDescriptorSet(ctx, ret.pipeline, bindings1);
 
@@ -40,8 +43,8 @@ void evolveRecord(Ctx& ctx, Evolve& evolve, EvolveArgs& args) {
     vkCmdPushConstants(cmdBuffer, evolve.pipeline.pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(EvolveArgs), &args);
     vkCmdDispatch(cmdBuffer, args.nrVertices/256+1, 1, 1);
     auto barrier = vks::initializers::memoryBarrier();
+    barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
     vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_DEPENDENCY_DEVICE_GROUP_BIT, 1, &barrier, 0, nullptr, 0, nullptr);
 }
