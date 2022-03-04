@@ -8,8 +8,8 @@ uint rand_xorshift(in uint seed) {
 
 uint g_seed;
 
-void initRand(in uint seed) {
-    g_seed = 23 * rand_xorshift(seed + rand_xorshift(17 * gl_GlobalInvocationID.x));
+void initRand(in uint seed, in uint id) {
+    g_seed = 5 + 23 * rand_xorshift(666 + seed + rand_xorshift(17 * id));
 }
 
 uint randu() {
@@ -33,6 +33,10 @@ Vertex randVertex() {
     ret.color.r = randf();
     ret.color.g = randf();
     ret.color.b = randf();
-    ret.color.a = randf() * 0.05f;
+    ret.color.a = randf() * 0.2f;
     return ret;
+}
+
+float brightness(vec3 col) {
+    return dot(vec3(0.299, 0.587, 0.114), col);
 }

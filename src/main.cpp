@@ -8,12 +8,13 @@
 #include <QuadRender.h>
 #include <Evolve.h>
 #include <Lottery.h>
+#include <Grader.h>
 
-constexpr uint32_t g_imageWidth = 128;
-constexpr uint32_t g_imageHeight = 128;
-constexpr uint32_t g_trianglesPerInstance = 20;
-constexpr uint32_t g_instancesWidth = 8;
-constexpr uint32_t g_instancesHeight = 8;
+constexpr uint32_t g_imageWidth = 256;
+constexpr uint32_t g_imageHeight = 256;
+constexpr uint32_t g_trianglesPerInstance = 50;
+constexpr uint32_t g_instancesWidth = 5;
+constexpr uint32_t g_instancesHeight = 5;
 constexpr uint32_t g_totalInstances = g_instancesWidth * g_instancesHeight;
 constexpr uint32_t g_totalTriangles = g_totalInstances * g_trianglesPerInstance;
 constexpr uint32_t g_windowWidth = g_imageWidth * g_instancesWidth;
@@ -35,6 +36,7 @@ Evolve initEvolve();
 GridRender initGridRender();
 QuadRender initQuadRender();
 Lottery initLottery();
+Grader initGrader();
 
 
 int main(int argc, char** argv) {
@@ -49,6 +51,7 @@ int main(int argc, char** argv) {
     auto lottery = initLottery();
     auto gridRender = initGridRender();
     auto quadRender = initQuadRender();
+    auto grader = initGrader();
 
 
     GridRenderArgs gridArgs {
@@ -64,7 +67,16 @@ int main(int argc, char** argv) {
 
     LotteryArgs lotteryArgs {
         .nrInstances = g_totalInstances,
+        .instanceWidth = g_imageWidth,
+        .instanceHeight = g_imageHeight,
         .seed = 0,
+    };
+
+    GraderArgs graderArgs {
+        .nrInstancesWidth = g_instancesWidth,
+        .nrInstancesHeight = g_instancesHeight,
+        .instanceWidth = g_imageWidth,
+        .instanceHeight = g_imageHeight,
     };
 
     double ping;
@@ -77,14 +89,17 @@ int main(int argc, char** argv) {
         auto beginInfo = vks::initializers::commandBufferBeginInfo();
         vkCheck(vkBeginCommandBuffer(frame.cmdBuffer, &beginInfo));
 
-        lotteryArgs.seed = rand_xorshift(evolveArgs.seed);
-        lotteryRecord(ctx, lottery, lotteryArgs);
-
-        evolveArgs.seed = rand_xorshift(7*frame.frameIdx),
-        evolveRecord(ctx, evolve, evolveArgs);
-
 
         grindRenderRecord(ctx, gridRender, gridArgs);
+
+        graderRecord(ctx, grader, graderArgs);
+
+        lotteryArgs.seed = rand_xorshift(7*frame.frameIdx),
+        lotteryRecord(ctx, lottery, lotteryArgs);
+
+        evolveArgs.seed = rand_xorshift(lotteryArgs.seed);
+        evolveRecord(ctx, evolve, evolveArgs);
+
         quadRenderRecord(ctx, quadRender);
 
         vkCheck(vkEndCommandBuffer(frame.cmdBuffer));
@@ -106,6 +121,7 @@ int main(int argc, char** argv) {
     buffertools::destroyBuffer(ctx, resources.parentsBuffer);
 
     destroyImage(ctx, resources.gridTarget);
+    graderDestroy(ctx, grader);
     evolveDestroy(ctx, evolve);
     lotteryDestroy(ctx, lottery);
     gridRenderDestroy(ctx, gridRender);
@@ -141,7 +157,7 @@ void printSubgroupInfo(const Ctx& ctx) {
 void initResources() {
     resources.gridTarget = createImageD(
             ctx, ctx.window.width, ctx.window.height,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_FORMAT_R32G32B32A32_SFLOAT,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -154,7 +170,7 @@ void initResources() {
     for(auto i=0; i<vertexData.size(); i++) {
         vertexData[i] = Vertex {
             { randf(), randf(), 0, 0 },
-            { randf(1.0f), randf(1.0f), randf(1.0f), randf(0.1f) }
+            { randf(1.0f), randf(1.0f), randf(1.0f), randf(0.2f) }
         };
     }
     resources.vertexBuffers[0] = buffertools::createBufferD_Data(ctx,
@@ -163,7 +179,7 @@ void initResources() {
 
 
     // last element is used as the total
-    std::vector<float> scores(g_totalInstances+1, 1.0f);
+    std::vector<float> scores(g_totalInstances+2, 1.0f);
     std::vector<uint32_t> parents(g_totalInstances*2, 0);
     scores[g_totalInstances] = 0;
     resources.scoresBuffer = buffertools::createBufferD_Data(ctx,
@@ -208,4 +224,13 @@ Lottery initLottery() {
     };
 
     return lotteryCreate(ctx, info);
+}
+
+Grader initGrader() {
+    GraderInfo info {
+        .gridImage = &resources.gridTarget,
+        .scoreBuffer = &resources.scoresBuffer,
+    };
+
+    return graderCreate(ctx, info);
 }

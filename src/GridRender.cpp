@@ -5,7 +5,7 @@ GridRender gridRenderCreate(Ctx& ctx, GridRenderInfo& info) {
 
 
     RenderPassInfo renderPassInfo{
-        .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
         .images = {info.target},
     };
     gridRender.renderPass = renderPassCreate(ctx, renderPassInfo);
@@ -45,7 +45,7 @@ void grindRenderRecord(Ctx& ctx, GridRender& gridRender, GridRenderArgs& push) {
     vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     VkDeviceSize offset = 0;
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gridRender.pipeline.pipeline);
-    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &gridRender.info.buffers[0]->buffer, &offset);
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &gridRender.info.buffers[ctx.frameCtx.frameIdx%2]->buffer, &offset);
     vkCmdPushConstants(cmdBuffer, gridRender.pipeline.pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GridRenderArgs), &push);
     vkCmdDraw(cmdBuffer, 3 * push.nrTriangles, 1, 0, 0);

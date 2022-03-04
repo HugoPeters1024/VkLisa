@@ -256,6 +256,7 @@ void _initDevice(Ctx& ctx) {
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{ 
+        .fillModeNonSolid = VK_TRUE,
     };
 
     // extra features
@@ -452,7 +453,7 @@ SwapchainSupport _querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR su
 VkSurfaceFormatKHR _chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
     for (const auto& format : formats) {
         if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return format;
+            //return format;
         }
     }
 

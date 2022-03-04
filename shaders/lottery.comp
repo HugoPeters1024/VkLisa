@@ -11,6 +11,8 @@ layout(binding = 1, set = 0) buffer Output { uint bufferParents[]; };
 
 layout(push_constant) uniform PushConstants {
     uint nrInstances;
+    uint instanceWidth;
+    uint instanceHeight;
     uint seed;
 } constants;
 
@@ -34,20 +36,31 @@ void main() {
 
     float value = bufferScores[i];
     float sum = subgroupAdd(value);
+    float maximum = subgroupMax(value);
+    bool imax = value == maximum;
     if (subgroupElect()) {
         atomicAdd(bufferScores[constants.nrInstances], sum);
     }
 
-    initRand(constants.seed);
+    initRand(constants.seed, i);
 
     // Only works per work group!!!!!!!!
-    // Delayed as long as possible
     memoryBarrierBuffer();
+    // Guaranteed that all the atomicAdds are now visible
     float total = bufferScores[constants.nrInstances];
-    memoryBarrierBuffer();
-    // Set the memory back to zero for the next round
-    if (i == 0) { bufferScores[constants.nrInstances] = 0; }
 
-    bufferParents[i*2+0] = draw(total);
-    bufferParents[i*2+1] = draw(total);
+    uint parent0 = imax ? i : draw(total);
+    uint parent1 = imax ? i : draw(total);
+
+    bufferParents[i*2+0] = parent0;
+    bufferParents[i*2+1] = parent1;
+
+    memoryBarrierBuffer();
+    // Guaranteed that everybody has read the total and used the buffer for the draw function call
+    // Set the memory back to zero for the next round
+    
+    bufferScores[i] = 1.0;
+    if (i == 0) { 
+        bufferScores[constants.nrInstances] = 0; 
+    }
 }

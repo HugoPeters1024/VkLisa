@@ -1,0 +1,43 @@
+#version 460
+
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_EXT_shader_atomic_float : enable
+
+#include "common.glsl"
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(binding = 0, rgba32f) uniform readonly image2D gridImage;
+layout(binding = 2, set = 0) buffer Output { float bufferScores[]; };
+
+layout(push_constant) uniform PushConstants {
+    uint nrInstancesWidth;
+    uint nrInstancesHeight;
+    uint instanceWidth;
+    uint instanceHeight;
+} constants;
+
+void main() {
+    uint x = gl_GlobalInvocationID.x / constants.instanceWidth;
+    uint y = gl_GlobalInvocationID.y / constants.instanceHeight;
+    uint i = x + constants.nrInstancesWidth * y;
+
+    uint xo = (gl_GlobalInvocationID.x % constants.instanceWidth);
+
+    vec3 src = imageLoad(gridImage, ivec2(gl_GlobalInvocationID.xy)).xyz;
+    vec3 target = vec3(1.0f, 0.0f, 1.0f);
+
+    if (xo < constants.instanceWidth/2) {
+        target = vec3(0.0f, 0.0f, 0.0f);
+    }
+
+    vec3 delta = target - src;
+    float scoreAdd = pow(1.0f - length(delta) / sqrt(3), 1.0f);
+
+    float sum = subgroupAdd(scoreAdd);
+
+    if (subgroupElect()) {
+        atomicAdd(bufferScores[i], sum);
+    }
+}

@@ -15,6 +15,8 @@ struct Lottery {
 
 struct LotteryArgs {
     uint32_t nrInstances;
+    uint32_t instanceWidth;
+    uint32_t instanceHeight;
     uint32_t seed;
 };
 

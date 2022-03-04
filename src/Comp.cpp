@@ -55,6 +55,13 @@ VkDescriptorSet compCreateDescriptorSet(const Ctx& ctx, const CompPipeline& comp
             auto bufferInfo = vks::initializers::descriptorBufferInfo(buffer);
             auto writeInfo = vks::initializers::writeDescriptorSet(ret, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, binding.first, &bufferInfo);
             vkUpdateDescriptorSets(ctx.device, 1, &writeInfo, 0, nullptr);
+        } else if (descr == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+            auto view = reinterpret_cast<VkImageView>(binding.second);
+            auto imageInfo = vks::initializers::descriptorImageInfo(VK_NULL_HANDLE, view, VK_IMAGE_LAYOUT_GENERAL);
+            auto writeInfo = vks::initializers::writeDescriptorSet(ret, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, binding.first, &imageInfo);
+            vkUpdateDescriptorSets(ctx.device, 1, &writeInfo, 0, nullptr);
+        } else {
+            assert(false);
         }
     }
 
