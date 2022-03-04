@@ -34,10 +34,15 @@ void main() {
         return;
     }
 
+    float minimum = subgroupMin(bufferScores[i]);
+    bufferScores[i] -= minimum * 0.85f + 1.0f;
+    memoryBarrierBuffer();
+
     float value = bufferScores[i];
     float sum = subgroupAdd(value);
     float maximum = subgroupMax(value);
     bool imax = value == maximum;
+
     if (subgroupElect()) {
         atomicAdd(bufferScores[constants.nrInstances], sum);
     }

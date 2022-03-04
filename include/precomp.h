@@ -29,5 +29,5 @@ namespace logger = spdlog;
 #define vkCheck(f) VK_CHECK_RESULT(f)
 #include <vks/vk_mem_alloc.hpp>
 
-
+#include <stb_image.h>
 

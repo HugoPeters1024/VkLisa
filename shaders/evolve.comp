@@ -12,6 +12,18 @@ layout(push_constant) uniform PushConstants {
     uint seed;
 } constants;
 
+void mutate(inout Vertex v) {
+    float rf = randf();
+    switch (randu() % 6) {
+        case 0: v.pos.x = rf;
+        case 1: v.pos.y = rf;
+        case 2: v.color.r = rf;
+        case 3: v.color.g = rf;
+        case 4: v.color.b = rf;
+        case 5: v.color.a = rf * 0.2f;
+    }
+}
+
 void main() {
     uint i = gl_GlobalInvocationID.x;
     if (i >= constants.nrVertices) {
@@ -32,8 +44,10 @@ void main() {
 
 
     // mutation
-    if (randf() < 0.001f) {
-        bufferOut[i] = randVertex();
+    if (randf() < 0.001f && triangleId > constants.nrTrianglesPerInstance) {
+        Vertex old = bufferIn[i];
+        mutate(old);
+        bufferOut[i] = old;
     } else {
         if (randu() % 2 == 0) {
             bufferOut[i] = vparent0;

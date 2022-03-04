@@ -9,6 +9,7 @@
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 layout(binding = 0, rgba32f) uniform readonly image2D gridImage;
+layout(binding = 1, rgba32f) uniform readonly image2D goalImage;
 layout(binding = 2, set = 0) buffer Output { float bufferScores[]; };
 
 layout(push_constant) uniform PushConstants {
@@ -23,19 +24,24 @@ void main() {
     uint y = gl_GlobalInvocationID.y / constants.instanceHeight;
     uint i = x + constants.nrInstancesWidth * y;
 
-    uint xo = (gl_GlobalInvocationID.x % constants.instanceWidth);
+    uint xi = gl_GlobalInvocationID.x % constants.instanceWidth;
+    uint yi = gl_GlobalInvocationID.y % constants.instanceHeight;
+
+    float xo = xi / float(constants.instanceWidth);
+    float yo = yi / float(constants.instanceHeight);
+
+    float xr = xo - 0.5f;
+    float yr = yo - 0.5f;
 
     vec3 src = imageLoad(gridImage, ivec2(gl_GlobalInvocationID.xy)).xyz;
-    vec3 target = vec3(1.0f, 0.0f, 1.0f);
+    vec3 target = imageLoad(goalImage, ivec2(xi, yi)).xyz;
 
-    if (xo < constants.instanceWidth/2) {
-        target = vec3(0.0f, 0.0f, 0.0f);
-    }
-
-    vec3 delta = target - src;
-    float scoreAdd = pow(1.0f - length(delta) / sqrt(3), 1.0f);
+    vec3 delta = (target - src);
+    float scoreAdd = pow(1.0f - length(delta) / sqrt(3), 5.0f);
+    
 
     float sum = subgroupAdd(scoreAdd);
+
 
     if (subgroupElect()) {
         atomicAdd(bufferScores[i], sum);

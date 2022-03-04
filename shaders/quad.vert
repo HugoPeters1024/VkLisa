@@ -11,6 +11,6 @@ layout(location = 0) out vec2 uv;
 void main() {
     uv = positions[gl_VertexIndex];
     gl_Position = vec4(uv, 0.0f, 1.0f);
-    uv = (uv + 1.0f) * 0.5f;
+    uv = (uv + 1.0f) * 0.5;
 }
 

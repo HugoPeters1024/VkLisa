@@ -49,6 +49,8 @@ link_directories(${CMAKE_SOURCE_DIR}/external/spdlog)
 include_directories(cvulkan PRIVATE ${CMAKE_SOURCE_DIR}/external/spdlog/include/)
 target_link_libraries(cvulkan spdlog)
 
+include_directories(cvulkan PRIVATE ${CMAKE_SOURCE_DIR}/external/stb_image/)
+
 find_package(Vulkan REQUIRED)
 target_link_libraries(cvulkan Vulkan::Vulkan)
 

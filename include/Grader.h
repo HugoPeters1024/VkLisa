@@ -5,6 +5,7 @@
 
 struct GraderInfo {
     Image* gridImage;
+    Image* goal;
     Buffer* scoreBuffer;
 };
 

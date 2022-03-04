@@ -33,7 +33,7 @@ Vertex randVertex() {
     ret.color.r = randf();
     ret.color.g = randf();
     ret.color.b = randf();
-    ret.color.a = randf() * 0.2f;
+    ret.color.a = randf() * 0.3f;
     return ret;
 }
 

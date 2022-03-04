@@ -12,6 +12,7 @@ Grader graderCreate(Ctx& ctx, GraderInfo& info) {
         .compShaderPath = "./shaders_bin/grader.comp.spv",
         .bindingDescription = {
             { 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE },
+            { 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE },
             { 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
         },
         .pushConstantRange = &pushConstant,
@@ -20,6 +21,7 @@ Grader graderCreate(Ctx& ctx, GraderInfo& info) {
 
     CompResourceBindings bindings {
         { 0, info.gridImage->view },
+        { 1, info.goal->view },
         { 2, info.scoreBuffer->buffer },
     };
     ret.descriptorSet = compCreateDescriptorSet(ctx, ret.pipeline, bindings);

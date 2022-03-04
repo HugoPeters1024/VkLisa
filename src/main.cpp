@@ -11,10 +11,10 @@
 #include <Grader.h>
 
 constexpr uint32_t g_imageWidth = 256;
-constexpr uint32_t g_imageHeight = 256;
-constexpr uint32_t g_trianglesPerInstance = 50;
-constexpr uint32_t g_instancesWidth = 5;
-constexpr uint32_t g_instancesHeight = 5;
+constexpr uint32_t g_imageHeight = 320;
+constexpr uint32_t g_trianglesPerInstance = 100;
+constexpr uint32_t g_instancesWidth = 6;
+constexpr uint32_t g_instancesHeight = 6;
 constexpr uint32_t g_totalInstances = g_instancesWidth * g_instancesHeight;
 constexpr uint32_t g_totalTriangles = g_totalInstances * g_trianglesPerInstance;
 constexpr uint32_t g_windowWidth = g_imageWidth * g_instancesWidth;
@@ -26,6 +26,7 @@ struct {
     Buffer vertexBuffers[2];
     Buffer scoresBuffer;
     Buffer parentsBuffer;
+    Image goal;
 } resources;
 
 
@@ -170,7 +171,7 @@ void initResources() {
     for(auto i=0; i<vertexData.size(); i++) {
         vertexData[i] = Vertex {
             { randf(), randf(), 0, 0 },
-            { randf(1.0f), randf(1.0f), randf(1.0f), randf(0.2f) }
+            { randf(1.0f), randf(1.0f), randf(1.0f), 0.1f, }
         };
     }
     resources.vertexBuffers[0] = buffertools::createBufferD_Data(ctx,
@@ -189,6 +190,12 @@ void initResources() {
     resources.parentsBuffer = buffertools::createBufferD_Data(ctx,
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         parents.size() * sizeof(uint32_t), parents.data());
+
+    resources.goal = loadImageD(ctx, VK_IMAGE_LAYOUT_GENERAL, "monalisa.bmp");
+
+    logger::info("Image dimensions: {}x{}", resources.goal.width, resources.goal.height);
+    assert(resources.goal.width == g_imageWidth);
+    assert(resources.goal.height == g_imageHeight);
 }
 
 
@@ -229,6 +236,7 @@ Lottery initLottery() {
 Grader initGrader() {
     GraderInfo info {
         .gridImage = &resources.gridTarget,
+        .goal = &resources.goal,
         .scoreBuffer = &resources.scoresBuffer,
     };
 
